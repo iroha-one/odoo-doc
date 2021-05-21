@@ -334,11 +334,14 @@ relational fields and reading a field on the reached model. The complete
 sequence of fields to traverse is specified by the ``related`` attribute.
 
 Some field attributes are automatically copied from the source field if
-they are not redefined: ``string``, ``help``, ``readonly``, ``required`` (only
+they are not redefined: ``string``, ``help``, ``required`` (only
 if all fields in the sequence are required), ``groups``, ``digits``, ``size``,
 ``translate``, ``sanitize``, ``selection``, ``comodel_name``, ``domain``,
 ``context``. All semantic-free attributes are copied from the source
 field.
+
+Until specified explicitly, related field has ``readonly=True`` and
+``copy=False``.
 
 By default, the values of related fields are not stored to the database.
 Add the attribute ``store=True`` to make it stored, just like computed

@@ -54,11 +54,16 @@ Running the server
 
 .. option:: --test-enable
 
-    runs tests after installing modules
+    runs tests after module installation
 
-.. option:: --test-tags 'tag_1,tag_2,...,-tag_n'
+.. option:: --test-tags [-][tag][/module][:class][.method]
 
-    select the tests to run by using tags.
+    Comma-separated list of spec to filter which tests to execute. Enable unit
+    tests if set. The '-' specifies if we want to include or exclude tests
+    matching this spec. The tag will match tags added on a class with a
+    :func:`~odoo.tests.common.tagged` decorator. By default tag value is
+    'standard' and 'at_install' when not given on include mode. '*' will match
+    all tags.
 
 .. option:: --screenshots
 

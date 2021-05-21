@@ -68,8 +68,8 @@ def resolve(old_resolve, tree, docname, *args, **kwargs):
         """
         _ref = _node['refuri'].replace('.html', '')
         _parent_directory_occurrences = _ref.count('..')
-        if not _parent_directory_occurrences:  # The ref is already the docname
-            _docname = _ref
+        if not _parent_directory_occurrences and '/' not in docname:
+            _docname = _ref # The ref is already the docname
         else:
             _path_parts = _ref.split('/')
             _res = docname.split('/')[:-(_parent_directory_occurrences+1)] \

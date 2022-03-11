@@ -145,6 +145,7 @@ supported_languages = {
     'pt_BR': 'Português (BR)',
     'uk': 'українська',
     'zh_CN': '简体中文',
+    'ja': '日本語',
 }
 
 # The specifications of redirect rules used by the redirects extension.

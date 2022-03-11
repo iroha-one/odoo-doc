@@ -1,0 +1,23 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: japanese-odoo-documentation-14\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-05-18 07:12+0200\n"
+"PO-Revision-Date: 2021-05-27 11:43\n"
+"Last-Translator: \n"
+"Language-Team: Japanese\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Crowdin-Project: japanese-odoo-documentation-14\n"
+"X-Crowdin-Project-ID: 457908\n"
+"X-Crowdin-Language: ja\n"
+"X-Crowdin-File: index.pot\n"
+"X-Crowdin-File-ID: 14\n"
+"Language: ja_JP\n"
+
+#: ../../content/index.rst:3
+msgid "Odoo Documentation"
+msgstr "Odoo ドキュメンテーション"
+

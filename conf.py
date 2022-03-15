@@ -19,7 +19,7 @@ copyright = 'Odoo S.A.'
 # `version` if the version info for the project being documented, acts as replacement for |version|,
 # also used in various other places throughout the built documents.
 # `release` is the full version, including alpha/beta/rc tags. Acts as replacement for |release|.
-version = release = '14.0'
+version = release = '15.0'
 
 # The minimal Sphinx version required to build the documentation.
 needs_sphinx = '3.0.0'
@@ -58,29 +58,44 @@ extension_dir = Path('extensions')
 sys.path.insert(0, str(extension_dir.absolute()))
 
 # Search for the directory of odoo sources to know whether autodoc should be used on the dev doc
-odoo_dir = Path('odoo')
+odoo_sources_candidate_dirs = (Path('odoo'), Path('../odoo'))
+odoo_sources_dirs = [
+    d for d in odoo_sources_candidate_dirs if d.is_dir() and (d / 'odoo-bin').exists()
+]
 odoo_dir_in_path = False
-if not odoo_dir.is_dir():
+
+if not odoo_sources_dirs:
     _logger.warning(
-        f"Could not find Odoo sources directory at {odoo_dir.absolute()}.\n"
-        f"The 'Developer' documentation will be built but autodoc directives will be skipped.\n"
-        f"In order to fully build the 'Developer' documentation, clone the repository with "
-        f"`git clone https://github.com/odoo/odoo` or create a symbolink link."
+        "Could not find Odoo sources directory in neither of the following folders:\n"
+        "%(dir_list)s\n"
+        "The 'Developer' documentation will be built but autodoc directives will be skipped.\n"
+        "In order to fully build the 'Developer' documentation, clone the repository with "
+        "`git clone https://github.com/odoo/odoo` or create a symbolic link.",
+        {'dir_list': '\n'.join([f'\t- {d.resolve()}' for d in odoo_sources_candidate_dirs])},
     )
 else:
-    sys.path.insert(0, str(odoo_dir.absolute()))
+    odoo_dir = odoo_sources_dirs[0].resolve()
+    sys.path.insert(0, str(odoo_dir))
+    if (3, 6) < sys.version_info < (3, 7):
+        # Running odoo needs python 3.7 min but monkey patch version_info to be compatible with 3.6
+        sys.version_info = (3, 7, 0)
     from odoo import release as odoo_release  # Don't collide with Sphinx's 'release' config option
-    odoo_version = odoo_release.version if 'alpha' not in odoo_release.version else 'master'
+    odoo_version = odoo_release.version.replace('~', '-') \
+        if 'alpha' not in odoo_release.version else 'master'
     if release != odoo_version:
         _logger.warning(
-            f"Found Odoo sources directory but with version '{odoo_version}' incompatible with "
-            f"documentation version '{version}'.\n"
-            f"The 'Developer' documentation will be built but autodoc directives will be skipped.\n"
-            f"In order to fully build the 'Developer' documentation, checkout the matching branch"
-            f" with `cd odoo && git checkout {version}`."
+            "Found Odoo sources in %(directory)s but with version '%(odoo_version)s' incompatible "
+            "with documentation version '%(doc_version)s'.\n"
+            "The 'Developer' documentation will be built but autodoc directives will be skipped.\n"
+            "In order to fully build the 'Developer' documentation, checkout the matching branch"
+            " with `cd odoo && git checkout %(doc_version)s`.",
+            {'directory': odoo_dir, 'odoo_version': odoo_version, 'doc_version': version},
         )
     else:
-        _logger.info(f"Found Odoo sources directory matching documentation version {release}.")
+        _logger.info(
+            "Found Odoo sources in %(directory)s matching documentation version '%(version)s'.",
+            {'directory': odoo_dir, 'version': release},
+        )
         odoo_dir_in_path = True
 
 # The Sphinx extensions to use, as module names.
@@ -101,17 +116,18 @@ extensions = [
     # Youtube and Vimeo videos integration (youtube, vimeo directives)
     'embedded_video',
 
-    'exercise_admonition',
+    'custom_admonitions',
 
     # Redirection generator
     'redirects',
 
-    # Code switcher (switcher and case directives)
-    'switcher',
+    # Content tabs
+    'sphinx_tabs.tabs',
 
     # Strange html domain logic used in memento pages
     'html_domain',
 ]
+
 if odoo_dir_in_path:
     # GitHub links generation
     extensions += [
@@ -130,13 +146,27 @@ github_user = 'odoo'
 github_project = 'documentation'
 
 locale_dirs = ['../locale/']
+templates_path = ['../extensions']
 
-# custom docname_to_domain to devide the translations of applications in subdirectories
+# custom docname_to_domain to divide the translations of applications in subdirectories
 sphinx.transforms.i18n.docname_to_domain = (
     sphinx.util.i18n.docname_to_domain
 ) = lambda docname, compact: docname.split('/')[1 if docname.startswith('applications/') else 0]
 
-supported_languages = {
+# The version names that should be shown in the version switcher, if the config option `versions`
+# is populated. If a version is passed to `versions` but is not listed here, it will not be shown.
+versions_names = {
+    'master': "Master",
+    'saas-15.2': "Odoo Online",
+    'saas-15.1': "Odoo Online",
+    '15.0': "Odoo 15",
+    '14.0': "Odoo 14",
+    '13.0': "Odoo 13",
+}
+
+# The language names that should be shown in the language switcher, if the config option `languages`
+# is populated. If a language is passed to `languages` but is not listed here, it will not be shown.
+languages_names = {
     'de': 'Deutsch',
     'en': 'English',
     'es': 'Español',
@@ -150,6 +180,9 @@ supported_languages = {
 
 # The specifications of redirect rules used by the redirects extension.
 redirects_file = 'redirects.txt'
+
+sphinx_tabs_disable_tab_closing = True
+sphinx_tabs_disable_css_loading = True
 
 #=== Options for HTML output ===#
 
@@ -175,7 +208,7 @@ html_permalinks = True  # Sphinx >= 3.5
 # Additional JS & CSS files that can be imported with the 'custom-js' and 'custom-css' metadata.
 # Lists are empty because the files are specified in extensions/themes.
 html_js_files = []
-html_css_files = []
+html_css_files = ["css/js.css"]
 
 # PHP lexer option to not require <?php
 highlight_options = {
@@ -278,15 +311,18 @@ def _generate_alternate_urls(app, pagename, templatename, context, doctree):
 
         The entry 'version' is added by Sphinx in the rendering context.
         """
-        # If the list of versions is not set, assume that the project has no alternate version
-        _alternate_versions = app.config.versions and app.config.versions.split(',') or []
-        context['alternate_versions'] = [
-            (_alternate_version, _build_url(_version=_alternate_version))
-            for _alternate_version in sorted(_alternate_versions, reverse=True)
-            if _alternate_version != version and (
-                _alternate_version != 'master' or pagename.startswith('developer')
-            )
-        ]
+        context['version_display_name'] = versions_names[version]
+
+        # If the list of versions is not set, assume the project has no alternate version
+        _provided_versions = app.config.versions and app.config.versions.split(',') or []
+
+        # Map alternate versions to their display names and URLs.
+        context['alternate_versions'] = []
+        for _alternate_version, _display_name in versions_names.items():
+            if _alternate_version in _provided_versions and _alternate_version != version:
+                context['alternate_versions'].append(
+                    (_display_name, _build_url(_alternate_version))
+                )
 
     def _localize():
         """ Add the pairs of (lang, code, url) for the current document in the rendering context.
@@ -297,19 +333,22 @@ def _generate_alternate_urls(app, pagename, templatename, context, doctree):
         """
         _current_lang = app.config.language or 'en'
         # Replace the context value by its translated description ("Français" instead of "french")
-        context['language'] = supported_languages.get(_current_lang)
+        context['language'] = languages_names.get(_current_lang)
 
         # If the list of languages is not set, assume that the project has no alternate language
-        _alternate_languages = app.config.languages and app.config.languages.split(',') or []
-        context['alternate_languages'] = [
-            (
-                supported_languages.get(_alternate_lang),
-                _alternate_lang.split('_')[0] if _alternate_lang != 'en' else 'x-default',
-                _build_url(_lang=_alternate_lang),
-            )
-            for _alternate_lang in _alternate_languages
-            if _alternate_lang in supported_languages and _alternate_lang != _current_lang
-        ]
+        _provided_languages = app.config.languages and app.config.languages.split(',') or []
+
+        # Map alternate languages to their display names and URLs.
+        context['alternate_languages'] = []
+        for _alternate_lang, _display_name in languages_names.items():
+            if _alternate_lang in _provided_languages and _alternate_lang != _current_lang:
+                context['alternate_languages'].append(
+                    (
+                        _display_name,
+                        _alternate_lang.split('_')[0] if _alternate_lang != 'en' else 'x-default',
+                        _build_url(_lang=_alternate_lang),
+                    )
+                )
 
     def _build_url(_version=None, _lang=None):
         if app.config.is_remote_build:

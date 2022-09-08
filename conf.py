@@ -175,7 +175,6 @@ languages_names = {
     'pt_BR': 'Português (BR)',
     'uk': 'українська',
     'zh_CN': '简体中文',
-    'ja': '日本語',
 }
 
 # The specifications of redirect rules used by the redirects extension.
@@ -372,3 +371,6 @@ def _generate_alternate_urls(app, pagename, templatename, context, doctree):
     _canonicalize()
     _versionize()
     _localize()
+
+# add ja, Japanse
+languages_names.setdefault('ja','にほんご')
